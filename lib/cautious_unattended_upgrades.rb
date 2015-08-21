@@ -1,5 +1,6 @@
 require 'yaml'
 require 'logger'
+require 'date'
 
 class Cautious_unattended_upgrades
 
@@ -16,6 +17,8 @@ class Cautious_unattended_upgrades
 	@valid_config_keys = @config.keys
 
 	@logger = nil
+
+	@packages = []
 
 	def self.configure(opts = {})
 		opts.each {
@@ -44,9 +47,38 @@ class Cautious_unattended_upgrades
 	end
 
 	def self.run_tests
+		puts @packages.inspect
 	end
 
 	def self.determine_recent_installs
+		begin
+			recent_logfile = IO.read(config[:unattended_upgrades_log])
+		rescue
+			log(:fatal, "Unable to open unattended upgrades log. Cannot determine recently installed packages.")
+			return nil
+		end
+
+		begin
+			statefile = IO.read(config[:state_file])
+		rescue
+			statefile = "1990-01-01"
+			IO.write(config[:state_file], statefile)
+		end
+
+		recent_logfile.each_line do |line|
+			date = DateTime.parse(line)
+			if date > DateTime.parse(statefile)
+				if /Packages that are upgraded: /.match(line)
+					# these are the lines containing package names
+					matches = /(?::\ ).+$/.match(line)
+					these_packages = matches[0].split(" ")
+					these_packages = these_packages[1..these_packages.length]
+					these_packages.each do |package|
+						@packages << package
+					end
+				end
+			end
+		end	
 
 	end
 
