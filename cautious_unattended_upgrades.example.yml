@@ -1,0 +1,14 @@
+log_level: debug
+log_file: /var/log/cautious_unattended_upgrades/cautious_unattended_upgrades.log
+unattended_upgrades_log: /var/log/unattended-upgrades/unattended-upgrades.log
+state_file: /var/lib/cautious_unattended_upgrades/cautious_unattended_upgrades.state
+tests_directory: /var/lib/cautious_unattended_upgrades/tests
+clients:
+ -
+  ip: 0.0.0.0
+  ssh_port: 22
+  user: cuu-upgrader
+ -
+  ip: 0.0.0.0
+  ssh_port: 5656
+  user: some-other-user

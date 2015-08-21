@@ -19,8 +19,6 @@ so they will run these upgrades on the next scheduled run.
 
 # Licence
 
-### License
-
 **Copyright (c) 2015, [Van Patten Media Inc.](http://www.vanpattenmedia.com/).**
 
 All rights reserved.
