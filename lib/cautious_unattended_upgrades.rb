@@ -64,7 +64,7 @@ class Cautious_unattended_upgrades
 		@did_fail = false
 
 		if Dir[@config[:tests_directory] + "/*.rb"].length == 0
-			log(:fatal, "Did not find any tests to run in '#{@config[:tests_directory]}'. Is this directory configured properly?")
+			log(Logger::FATAL, "Did not find any tests to run in '#{@config[:tests_directory]}'. Is this directory configured properly?")
 			false
 		end
 
