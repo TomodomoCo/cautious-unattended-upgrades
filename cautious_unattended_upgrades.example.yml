@@ -3,6 +3,7 @@ log_file: /var/log/cautious_unattended_upgrades/cautious_unattended_upgrades.log
 unattended_upgrades_log: /var/log/unattended-upgrades/unattended-upgrades.log
 state_file: /var/lib/cautious_unattended_upgrades/cautious_unattended_upgrades.state
 tests_directory: /var/lib/cautious_unattended_upgrades/tests
+ssh_identity: /home/cuu-upgrader/.ssh/id_rsa
 clients:
  -
   ip: 0.0.0.0
@@ -12,3 +13,6 @@ clients:
   ip: 0.0.0.0
   ssh_port: 5656
   user: some-other-user
+
+email_alerts:
+  - you@example.org

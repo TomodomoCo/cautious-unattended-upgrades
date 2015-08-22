@@ -14,6 +14,7 @@ class Cautious_unattended_upgrades
 		:tests_directory         => "/var/lib/cautious_unattended_upgrades/tests",
 		:ssh_identity            => "/root/.ssh/id_rsa",
 		:clients                 => [],
+		:email_alerts            => [],
 	}
 
 	@valid_config_keys = @config.keys
@@ -23,6 +24,8 @@ class Cautious_unattended_upgrades
 	@did_fail = true # for safety
 
 	@failures = []
+
+	@warns_and_errors = []
 
 	def self.configure(opts = {})
 		opts.each {
@@ -35,12 +38,18 @@ class Cautious_unattended_upgrades
 		@logger = Logger.new(@config[:log_file], File::WRONLY | File::APPEND)
 		@logger.add(level, message, "cautious-unattended-upgrades")
 		puts message
+
+		case level
+			when Logger::WARN, Logger::ERROR, Logger::FATAL
+				@warns_and_errors << message
+		end
+
 	end
 
 	def self.configure_with(yaml_path)
 		local_logger = Logger.new(STDERR)
 		begin
-		config = YAML::load(IO.read(path_to_yaml_file))
+		config = YAML::load(IO.read(yaml_path))
 		rescue Errno::ENOENT
 			local_logger.add(Logger::WARN, "YAML configuration file couldn't be found. Using defaults."); return
 		rescue Psych::SyntaxError
@@ -61,7 +70,9 @@ class Cautious_unattended_upgrades
 
 		Dir[@config[:tests_directory] + "/*.rb"].each do |test|
 			begin
+				log(Logger::DEBUG, "Starting test #{test}")
 				require test
+				log(Logger::DEBUG, "Completing test #{test}")
 			rescue StandardError => e
 				log(Logger::WARN, "Test '#{test}' failed with '#{e}'")
 				@failures << { test => e }
@@ -98,26 +109,28 @@ class Cautious_unattended_upgrades
 				unless status.success? 
 					log(Logger::ERROR, "Package upgrade push for #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]} failed with #{status}.")
 					log(Logger::DEBUG, output)
-					log(Logger::DEBUG, err);
+					log(Logger::DEBUG, err)
+					log(Logger::ERROR, "The following packages were therefore NOT pushed to the whitelist on #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]}: #{@packages}. Manual intervention for these packages will be needed.")
 				end
 				
 			end
+
+			# all finished
+
+			today = DateTime.now()
+			statefile = IO.write(config[:state_file], today.strftime("%Y-%m-%d"))
+			
 
 		else
 			log(Logger::WARN, "Will not push upgrades to clients, as one or more tests failed, or no tests have been run.")
 		end
 	end
 
-	def self.dumpy_dump
-		puts @failures
-		puts @did_fail
-	end
-
 	def self.determine_recent_installs
 		begin
 			recent_logfile = IO.read(config[:unattended_upgrades_log])
 		rescue
-			log(:fatal, "Unable to open unattended upgrades log. Cannot determine recently installed packages.")
+			log(Logger::FATAL, "Unable to open unattended upgrades log. Cannot determine recently installed packages.")
 			return nil
 		end
 
@@ -145,28 +158,26 @@ class Cautious_unattended_upgrades
 
 	end
 
+	def self.email_errors
 
-  # Configure through hash
-  def self.configure(opts = {})
-    opts.each {|k,v| @config[k.to_sym] = v if @valid_config_keys.include? k.to_sym}
-  end
+		if @warns_and_errors.length > 0
+			# build an email string
+			email_string = "Cautious Unattended Upgrades experienced one or more warnings, errors or worse!\n\n"
 
-  # Configure through yaml file
-  def self.configure_with(path_to_yaml_file)
-    begin
-      config = YAML::load(IO.read(path_to_yaml_file))
-    rescue Errno::ENOENT
-      log(:warning, "YAML configuration file couldn't be found. Using defaults."); return
-    rescue Psych::SyntaxError
-      log(:warning, "YAML configuration file contains invalid syntax. Using defaults."); return
-    end
+			@warns_and_errors.each do |err|
+				email_string += ": #{err}\n"
+			end
 
-    configure(config)
-  end
+			@config[:email_alerts].each do |address|
+				Open3.capture3("mail -s 'Cautious Unattended Upgrades' #{address}", :stdin_data=>email_string)
+			end
+		end
+		
+	end
 
-  def self.config
-    @config
-  end
+	def self.config
+		@config
+	end
 
 end
 

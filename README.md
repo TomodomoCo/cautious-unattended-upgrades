@@ -11,6 +11,7 @@ so they will run these upgrades on the next scheduled run.
 ## CUU Test Server
 
 * `unattended-upgrades` configured to go wild and install all the new (security) updates you desire
+* the CUU system configured to run daily **after** the `unattended-upgrades` run is finished
 
 ## CUU Clients
 
