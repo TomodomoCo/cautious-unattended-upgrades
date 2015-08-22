@@ -1,6 +1,7 @@
 require 'yaml'
 require 'logger'
 require 'date'
+require 'open3'
 
 class Cautious_unattended_upgrades
 
@@ -11,6 +12,7 @@ class Cautious_unattended_upgrades
 		:unattended_upgrades_log => "/var/log/unattended-upgrades/unattended-upgrades.log",
 		:state_file              => "/var/lib/cautious_unattended_upgrades/cautious_unattended_upgrades.state",
 		:tests_directory         => "/var/lib/cautious_unattended_upgrades/tests",
+		:ssh_identity            => "/root/.ssh/id_rsa",
 		:clients                 => [],
 	}
 
@@ -92,7 +94,12 @@ class Cautious_unattended_upgrades
 
 				# as escaped for shell
 				# $ sed -e 's/Package-Whitelist {\([^}]\+\)}/Package-Whitelist { \"firefox-locale-en\"; \"tzdata\"; \"openssh-client\"; \"openssh-server\"; \"ssh\"; \"libsnmp-base\"; \"libsnmp15\"; \"linux-image-virtual\"; \"linux-libc-dev\"; \"snmp\"; \"snmpd\"; \"openssh-client\"; \"openssh-server\"; \"ssh\";  }/g' /etc/apt/apt.conf.d/50unattended-upgrades
-				system("ssh -p #{client["ssh_port"]} -l #{client["user"]} #{client["ip"]} \"#{sed_cmd}\"")	
+				output, err, status = Open3.capture3("ssh -i #{@config[:ssh_identity]} -p #{client["ssh_port"]} -l #{client["user"]} #{client["ip"]} \"#{sed_cmd}\"")	
+				unless status.success? 
+					log(Logger::ERROR, "Package upgrade push for #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]} failed with #{status}.")
+					log(Logger::DEBUG, output)
+					log(Logger::DEBUG, err);
+				end
 				
 			end
 
