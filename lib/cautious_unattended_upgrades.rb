@@ -16,38 +16,94 @@ class Cautious_unattended_upgrades
 
 	@valid_config_keys = @config.keys
 
-	@logger = nil
-
 	@packages = []
+
+	@did_fail = true # for safety
+
+	@failures = []
 
 	def self.configure(opts = {})
 		opts.each {
 			|k,v| @config[k.to_sym] = v if @valid_config_keys.include? k.to_sym
 		}
+
 	end
 
-	def self.log(level = :debug, message)
-		#if @logger == nil:
-		#	@logger = Logger.new(@config[log_file], File::APPEND)
-
-		#@logger.info(message)
+	def self.log(level = Logger::DEBUG, message)
+		@logger = Logger.new(@config[:log_file], File::WRONLY | File::APPEND)
+		@logger.add(level, message, "cautious-unattended-upgrades")
 		puts message
 	end
 
 	def self.configure_with(yaml_path)
+		local_logger = Logger.new(STDERR)
 		begin
 		config = YAML::load(IO.read(path_to_yaml_file))
 		rescue Errno::ENOENT
-			log(:warning, "YAML configuration file couldn't be found. Using defaults."); return
+			local_logger.add(Logger::WARN, "YAML configuration file couldn't be found. Using defaults."); return
 		rescue Psych::SyntaxError
-			log(:warning, "YAML configuration file contains invalid syntax. Using defaults."); return
+			local_logger.add(Logger::WARN, "YAML configuration file contains invalid syntax. Using defaults."); return
 		end		
 
 		configure(config)
 	end
 
 	def self.run_tests
-		puts @packages.inspect
+
+		@did_fail = false
+
+		if Dir[@config[:tests_directory] + "/*.rb"].length == 0
+			log(:fatal, "Did not find any tests to run in '#{@config[:tests_directory]}'. Is this directory configured properly?")
+			false
+		end
+
+		Dir[@config[:tests_directory] + "/*.rb"].each do |test|
+			begin
+				require test
+			rescue StandardError => e
+				log(Logger::WARN, "Test '#{test}' failed with '#{e}'")
+				@failures << { test => e }
+				@did_fail = true
+			end
+		end
+
+	end
+
+	def self.maybe_push_upgrades
+		unless @did_fail
+
+			# let's push upgrades
+
+			if @packages.length < 1
+				log(Logger::INFO, "No new package upgrades to push.")
+				return
+			end
+
+			formatted_whitelist = ''
+
+			@packages.each do |package|
+				formatted_whitelist += "\\\"#{package}\\\"; "
+			end
+
+			sed_cmd = "sed -i -e 's/Package-Whitelist\s{\\([^}]\\+\\)}/Package-Whitelist { #{formatted_whitelist} }/g' /etc/apt/apt.conf.d/50unattended-upgrades"
+
+			@config[:clients].each do |client|
+				log(Logger::INFO, "Pushing package upgrade whitelist to #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]}")
+
+				# as escaped for shell
+				# $ sed -e 's/Package-Whitelist {\([^}]\+\)}/Package-Whitelist { \"firefox-locale-en\"; \"tzdata\"; \"openssh-client\"; \"openssh-server\"; \"ssh\"; \"libsnmp-base\"; \"libsnmp15\"; \"linux-image-virtual\"; \"linux-libc-dev\"; \"snmp\"; \"snmpd\"; \"openssh-client\"; \"openssh-server\"; \"ssh\";  }/g' /etc/apt/apt.conf.d/50unattended-upgrades
+				system("ssh -p #{client["ssh_port"]} -l #{client["user"]} #{client["ip"]} \"#{sed_cmd}\"")	
+				
+			end
+
+		else
+			log(Logger::WARN, "Will not push upgrades to clients, as one or more tests failed, or no tests have been run.")
+		end
+	end
+
+	def self.dumpy_dump
+		puts @failures
+		puts @did_fail
 	end
 
 	def self.determine_recent_installs

@@ -16,6 +16,7 @@ so they will run these upgrades on the next scheduled run.
 
 * `unattended-upgrades` version 0.83 or higher (for Whitelist support) installed and configured
 * a cron job to clear the package whitelist after the each execution of `unattended-upgrades`
+* a parser limitation at this early stage is that the Whitelist line in `50unattended-upgrades` must be on one line
 
 # Licence
 
