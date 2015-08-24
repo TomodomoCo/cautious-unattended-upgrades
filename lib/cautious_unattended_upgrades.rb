@@ -136,6 +136,7 @@ class Cautious_unattended_upgrades
 
 		begin
 			statefile = IO.read(@config[:state_file])
+			statedate = DateTime.parse(statefile)
 		rescue
 			statefile = "1990-01-01"
 			IO.write(@config[:state_file], statefile)

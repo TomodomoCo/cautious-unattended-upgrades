@@ -1,0 +1,7 @@
+require 'cautious_unattended_upgrades'
+
+Cautious_unattended_upgrades.configure_with('/etc/cautious_unattended_upgrades.yml')
+Cautious_unattended_upgrades.determine_recent_installs
+Cautious_unattended_upgrades.run_tests
+Cautious_unattended_upgrades.maybe_push_upgrades
+Cautious_unattended_upgrades.email_errors
