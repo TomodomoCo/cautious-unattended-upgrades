@@ -18,7 +18,9 @@ want to get the code out there ASAP, though, and we'll do our best to help if yo
 
 * `unattended-upgrades` configured to go wild and install all the new (security) updates you desire
 * configured to run the bootstrapper script `run-cuu.rb` daily **after** the `unattended-upgrades` run is finished on the Canary server, and at a time that will not conflict with clients' Whitelist Reset cron job (see below)
-* some tests to run
+* some tests to run (we use Watir/Selenium WebDriver, see `example.test.rb`)
+  * if you're using our Watir/Selenium WebDriver tests, the `selenium-webdriver` gem, as well as the `headless` gem, and `Xvfb` and `iceweasel` for the browser itself
+  * enough RAM to run a desktop web browser, even in headless mode -- we had to add swap to a 512 MB VM or it was not happy
 
 ## CUU Clients
 
