@@ -118,7 +118,7 @@ class Cautious_unattended_upgrades
 			# all finished
 
 			today = DateTime.now()
-			statefile = IO.write(config[:state_file], today.strftime("%Y-%m-%d"))
+			statefile = IO.write(@config[:state_file], today.strftime("%Y-%m-%d"))
 			
 
 		else
@@ -128,17 +128,17 @@ class Cautious_unattended_upgrades
 
 	def self.determine_recent_installs
 		begin
-			recent_logfile = IO.read(config[:unattended_upgrades_log])
+			recent_logfile = IO.read(@config[:unattended_upgrades_log])
 		rescue
 			log(Logger::FATAL, "Unable to open unattended upgrades log. Cannot determine recently installed packages.")
 			return nil
 		end
 
 		begin
-			statefile = IO.read(config[:state_file])
+			statefile = IO.read(@config[:state_file])
 		rescue
 			statefile = "1990-01-01"
-			IO.write(config[:state_file], statefile)
+			IO.write(@config[:state_file], statefile)
 		end
 
 		recent_logfile.each_line do |line|
