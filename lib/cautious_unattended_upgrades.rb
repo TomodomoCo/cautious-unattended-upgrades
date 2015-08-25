@@ -99,6 +99,7 @@ class Cautious_unattended_upgrades
 			end
 
 			sed_cmd = "sed -i -e 's/Package-Whitelist\s{\\([^}]\\+\\)}/Package-Whitelist { #{formatted_whitelist} }/g' /etc/apt/apt.conf.d/50unattended-upgrades"
+			sed_bl_cmd = "sed -i -e 's/Package-Blacklist\s{\\([^}]\\+\\)}/Package-Blacklist { }/g' /etc/apt/apt.conf.d/50unattended-upgrades"
 
 			@config[:clients].each do |client|
 				log(Logger::INFO, "Pushing package upgrade whitelist to #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]}")
@@ -111,6 +112,14 @@ class Cautious_unattended_upgrades
 					log(Logger::DEBUG, output)
 					log(Logger::DEBUG, err)
 					log(Logger::ERROR, "The following packages were therefore NOT pushed to the whitelist on #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]}: #{@packages}. Manual intervention for these packages will be needed.")
+				end
+
+				output, err, status = Open3.capture3("ssh -i #{@config[:ssh_identity]} -p #{client["ssh_port"]} -l #{client["user"]} #{client["ip"]} \"#{sed_bl_cmd}\"")	
+				unless status.success? 
+					log(Logger::ERROR, "Package upgrade blacklist clear for #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]} failed with #{status}.")
+					log(Logger::DEBUG, output)
+					log(Logger::DEBUG, err)
+					log(Logger::ERROR, "The following packages were therefore NOT pushed to the whitelist correctly on #{client["user"]}@#{client["ip"]}:#{client["ssh_port"]}: #{@packages}. Manual intervention for these packages will be needed.")
 				end
 				
 			end

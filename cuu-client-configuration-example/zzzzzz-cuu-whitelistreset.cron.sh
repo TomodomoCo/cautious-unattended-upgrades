@@ -8,4 +8,5 @@
 #
 #
 
+sed -i -e 's/Package-Blacklist {\([^}]\+\)}/Package-Blacklist { "*" }/g' /etc/apt/apt.conf.d/50unattended-upgrades
 sed -i -e 's/Package-Whitelist {\([^}]\+\)}/Package-Whitelist { }/g' /etc/apt/apt.conf.d/50unattended-upgrades
