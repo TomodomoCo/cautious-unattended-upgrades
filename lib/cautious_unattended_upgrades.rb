@@ -154,7 +154,7 @@ class Cautious_unattended_upgrades
 		recent_logfile.each_line do |line|
 			date = DateTime.parse(line)
 			if date > DateTime.parse(statefile)
-				if /Packages that are upgraded: /.match(line)
+				if /Packages that will be upgraded: /.match(line)
 					# these are the lines containing package names
 					matches = /(?::\ ).+$/.match(line)
 					these_packages = matches[0].split(" ")
