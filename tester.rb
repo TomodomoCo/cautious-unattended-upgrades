@@ -1,6 +1,0 @@
-require 'cautious_unattended_upgrades'
-
-Cautious_unattended_upgrades.configure_with('cautious_unattended_upgrades.debugsynth.yml')
-puts Cautious_unattended_upgrades.config
-Cautious_unattended_upgrades.determine_recent_installs
-Cautious_unattended_upgrades.run_tests
