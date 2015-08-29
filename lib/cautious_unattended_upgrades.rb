@@ -161,10 +161,15 @@ class Cautious_unattended_upgrades
 					these_packages = these_packages[1..these_packages.length]
 					these_packages.each do |package|
 						@packages << package
+						log(Logger::DEBUG, "Found package #{package} that has been updated, adding to the list to push.")
 					end
 				end
 			end
 		end	
+
+		if @packages.length < 1
+			log(Logger::DEBUG, "The unattended upgrades log suggests that no new packages were upgraded since #{statefile}, so the CUU package list is empty.")
+		end
 
 	end
 
