@@ -1,4 +1,7 @@
 # Cautious Unattended Upgrades
+
+**Not in regular use and largely retired!**
+
 Cautious Unattended Upgrades (CUU) is a system for installing Debian `unattended-upgrades` on a test server (the Canary),
 then running a Ruby-based test suite on this Canary to ensure that these upgrades have not broken any critical functionality
 of your production environment.
